@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recent GitHub Events</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f9;
+            margin: 20px;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+        #events-container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .event {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            color: #fff;
+        }
+        .push {
+            background-color: #3498db;
+        }
+        .pull_request {
+            background-color: #e67e22;
+        }
+        .merge {
+            background-color: #2ecc71;
+        }
+        .pagination {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .pagination button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            margin: 0 5px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .pagination button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1>Recent GitHub Events</h1>
+    <div id="events-container"></div>
+    <div class="pagination">
+        <button id="prev-page" disabled>Previous</button>
+        <button id="next-page">Next</button>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        const limit = 10;
+	
+        function formatDate(utcTime) {
+            const date = new Date(utcTime + "Z");
+            const options = { 
+                day: 'numeric', 
+                month: 'long', 
+                year: 'numeric', 
+                hour: 'numeric', 
+                minute: 'numeric', 
+                hour12: true,
+                timeZone: 'UTC',
+                timeZoneName: 'short'
+            };
+            return date.toLocaleString('en-US', options);
+        }
+
+      	 
+
+        function renderEvent(event) {
+            const timestamp = formatDate(event.timestamp);
+
+            let eventText = '';
+            let eventClass = '';
+            
+            if (event.action === 'push') {
+                eventText = `<strong>${event.author}</strong> pushed to <strong>${event.to_branch}</strong> on <strong>${timestamp}</strong>`;
+                eventClass = 'push';
+            } else if (event.action === 'pull_request') {
+                eventText = `<strong>${event.author}</strong> submitted a pull request from <strong>${event.from_branch}</strong> to <strong>${event.to_branch}</strong> on <strong>${timestamp}</strong>`;
+                eventClass = 'pull_request';
+            } else if (event.action === 'merge') {
+                eventText = `<strong>${event.author}</strong> merged branch <strong>${event.from_branch}</strong> to <strong>${event.to_branch}</strong> on <strong>${timestamp}</strong>`;
+                eventClass = 'merge';
+            }
+
+            const eventDiv = document.createElement('div');
+            eventDiv.classList.add('event', eventClass);
+            eventDiv.innerHTML = eventText;
+            return eventDiv;
+        }
+
+        function fetchEvents(page = 1) {
+            fetch(`/events?page=${page}&limit=${limit}`)
+                .then(response => response.json())
+                .then(data => {
+                    const eventsContainer = document.getElementById('events-container');
+                    eventsContainer.innerHTML = '';
+
+                    data.events.forEach(event => {
+                        const eventElement = renderEvent(event);
+                        eventsContainer.appendChild(eventElement);
+                    });
+
+                    document.getElementById('prev-page').disabled = data.page === 1;
+                    document.getElementById('next-page').disabled = data.page === data.total_pages;
+                })
+                .catch(error => console.error('Error fetching events:', error));
+        }
+
+        document.getElementById('prev-page').addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                fetchEvents(currentPage);
+            }
+        });
+
+        document.getElementById('next-page').addEventListener('click', () => {
+            currentPage++;
+            fetchEvents(currentPage);
+        });
+
+        fetchEvents();
+        setInterval(fetchEvents, 15000); 
+    </script>
+</body>
+</html>
+
