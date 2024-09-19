@@ -1,10 +1,12 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
+
 
 class Action(Enum):
     PUSH = "push"
     PULL_REQUEST = "pull_request"
     MERGE = "merge"
+
 
 def create_event(author, from_branch, to_branch, action, request_id):
     """
@@ -15,7 +17,7 @@ def create_event(author, from_branch, to_branch, action, request_id):
             "author": author,
             "from_branch": from_branch,
             "to_branch": to_branch,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.utcnow().replace(tzinfo=timezone.utc),
             "action": action.value,
             "request_id": request_id,
         }

@@ -3,7 +3,8 @@ from ..extensions import events_collection
 from pymongo import errors
 from ..models.event import create_event, Action
 
-webhook = Blueprint('Webhook', __name__, url_prefix='/webhook')
+webhook = Blueprint("Webhook", __name__, url_prefix="/webhook")
+
 
 @webhook.route("/receiver", methods=["POST"])
 def receiver():
@@ -23,7 +24,9 @@ def receiver():
                 data["head_commit"]["id"],
             )
         elif event_type == Action.PULL_REQUEST.value:
-            action = Action.MERGE if data["pull_request"]["merged"] else Action.PULL_REQUEST
+            action = (
+                Action.MERGE if data["pull_request"]["merged"] else Action.PULL_REQUEST
+            )
             event = create_event(
                 data["pull_request"]["user"]["login"],
                 data["pull_request"]["head"]["ref"],
@@ -36,12 +39,19 @@ def receiver():
                 ),
             )
         else:
-            return jsonify({"status": "failure", "message": "Unsupported event type"}), 400
+            return (
+                jsonify({"status": "failure", "message": "Unsupported event type"}),
+                400,
+            )
 
         if not event:
-            return jsonify({"status": "failure", "message": "Event creation failed"}), 500
+            return (
+                jsonify({"status": "failure", "message": "Event creation failed"}),
+                500,
+            )
 
-        event["_id"] = str(events_collection.insert_one(event).inserted_id)
+        inserted_item = events_collection.insert_one(event)
+        event["_id"] = str(inserted_item.inserted_id)
         return jsonify({"status": "success", "data": event}), 201
 
     except errors.PyMongoError as e:
@@ -49,4 +59,7 @@ def receiver():
     except KeyError as e:
         return jsonify({"status": "failure", "message": f"Missing data: {e}"}), 400
     except Exception as e:
-        return jsonify({"status": "failure", "message": "An unexpected error occurred"}), 500
+        return (
+            jsonify({"status": "failure", "message": "An unexpected error occurred"}),
+            500,
+        )
